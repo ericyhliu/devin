@@ -12,4 +12,5 @@ export const config = {
   port: Number(process.env.PORT ?? 3000),
   githubWebhookSecret: required("GITHUB_WEBHOOK_SECRET"),
   devinLabel: process.env.DEVIN_LABEL ?? "devin",
+  databaseUrl: required("DATABASE_URL"),
 };

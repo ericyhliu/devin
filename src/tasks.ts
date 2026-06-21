@@ -1,0 +1,44 @@
+import { query } from "./db.js";
+
+/**
+ * Record a webhook delivery for idempotency. Returns true if this is the FIRST
+ * time we've seen this delivery id, false if it's a redelivery (already seen).
+ */
+export async function recordDelivery(
+  deliveryId: string,
+  event: string | undefined,
+): Promise<boolean> {
+  const res = await query(
+    `INSERT INTO webhook_deliveries (delivery_id, event)
+     VALUES ($1, $2)
+     ON CONFLICT (delivery_id) DO NOTHING
+     RETURNING delivery_id`,
+    [deliveryId, event ?? null],
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+export interface EnqueueInput {
+  repo: string;
+  issueNumber: number;
+  issueTitle: string;
+  issueUrl: string;
+}
+
+/**
+ * Enqueue an issue for remediation. The UNIQUE(repo, issue_number) constraint
+ * plus ON CONFLICT DO NOTHING guarantees exactly one task (and later one Devin
+ * session) per issue, regardless of how many webhooks arrive or in what order.
+ *
+ * Returns true if a new task row was created, false if one already existed.
+ */
+export async function enqueueTask(input: EnqueueInput): Promise<boolean> {
+  const res = await query(
+    `INSERT INTO tasks (repo, issue_number, issue_title, issue_url)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (repo, issue_number) DO NOTHING
+     RETURNING id`,
+    [input.repo, input.issueNumber, input.issueTitle, input.issueUrl],
+  );
+  return (res.rowCount ?? 0) > 0;
+}
