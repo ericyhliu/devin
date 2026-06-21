@@ -5,7 +5,7 @@ to **autonomously discover, file, and remediate code-quality issues** in a GitHu
 repository — with a live monitoring dashboard.
 
 A human labels an issue (or clicks one button); everything after that — spinning up
-Devin, writing the fix, opening the PR, tracking it to merge — happens on its own.
+Devin, writing the fix, opening the PR, tracking it to merge — happens automatically.
 
 > **The thesis:** a script can fix a *known* bug, but it can't decide *what's worth
 > fixing*. Discovery → triage → remediation is judgment work, and that's exactly what
