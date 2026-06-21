@@ -7,6 +7,7 @@ import { startWorker } from "./worker.js";
 import { startSync } from "./sync.js";
 import { getDashboardData } from "./dashboard.js";
 import { renderDashboardPage } from "./dashboard-page.js";
+import { renderWorkflowsPage } from "./workflows-page.js";
 import {
   triggerWorkflowRun,
   setSchedule,
@@ -26,6 +27,7 @@ app.get("/health", (_req, res) => {
 
 // Dashboard: HTML shell at / + JSON data endpoint it polls.
 app.get("/", (_req, res) => res.type("html").send(renderDashboardPage()));
+app.get("/workflows", (_req, res) => res.type("html").send(renderWorkflowsPage()));
 app.get("/api/tasks", async (_req, res) => {
   try {
     res.json(await getDashboardData());
