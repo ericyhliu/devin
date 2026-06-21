@@ -1,0 +1,11 @@
+services:
+  test-db:
+    image: postgres:16-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: devin_test
+      POSTGRES_PASSWORD: test123
+      POSTGRES_DB: devin_test
+    tmpfs:
+      - /var/lib/postgresql/data
