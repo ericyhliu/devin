@@ -25,4 +25,8 @@ export const config = {
 
   // Sync loop (live progress + ACU capture + failure safety-net)
   syncIntervalMs: Number(process.env.SYNC_INTERVAL_MS ?? 20000),
+
+  // Workflows (autonomous discovery → file issues → remediate)
+  targetRepo: process.env.TARGET_REPO ?? "ericyhliu/superset",
+  workflowIntervalMs: Number(process.env.WORKFLOW_INTERVAL_MS ?? 3600000), // 1h
 };

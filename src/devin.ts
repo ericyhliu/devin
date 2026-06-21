@@ -15,6 +15,8 @@ export interface CreateSessionInput {
   tags?: string[];
   /** When true, Devin dedupes identical requests instead of starting a new run. */
   idempotent?: boolean;
+  /** JSON Schema for a structured result (e.g. the list of issues discovery filed). */
+  structuredOutputSchema?: Record<string, unknown>;
 }
 
 export interface DevinPullRequest {
@@ -29,6 +31,7 @@ export interface DevinSession {
   status_detail: string | null; // working | waiting_for_user | finished | ...
   pull_requests: DevinPullRequest[];
   acus_consumed?: number;
+  structured_output?: unknown; // populated when the session returns structured output
 }
 
 /** Create a Devin session. Returns the new session's id + url + initial status. */
@@ -41,6 +44,9 @@ export async function createSession(input: CreateSessionInput): Promise<DevinSes
       title: input.title,
       tags: input.tags,
       idempotent: input.idempotent ?? true,
+      ...(input.structuredOutputSchema
+        ? { structured_output_schema: input.structuredOutputSchema }
+        : {}),
     }),
   });
   if (!res.ok) {

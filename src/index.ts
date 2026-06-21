@@ -7,6 +7,7 @@ import { startWorker } from "./worker.js";
 import { startSync } from "./sync.js";
 import { getDashboardData } from "./dashboard.js";
 import { renderDashboardPage } from "./dashboard-page.js";
+import { triggerWorkflowRun, setSchedule, getWorkflowsData } from "./workflows.js";
 
 const app = express();
 
@@ -23,6 +24,32 @@ app.get("/", (_req, res) => res.type("html").send(renderDashboardPage()));
 app.get("/api/tasks", async (_req, res) => {
   try {
     res.json(await getDashboardData());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Workflows: data + controls (run activates the schedule and fires immediately).
+app.get("/api/workflows", async (_req, res) => {
+  try {
+    res.json(await getWorkflowsData());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.post("/api/workflows/run", async (_req, res) => {
+  try {
+    await setSchedule("active");
+    const result = await triggerWorkflowRun("manual");
+    res.json({ ok: true, ...result });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+app.post("/api/workflows/pause", async (_req, res) => {
+  try {
+    await setSchedule("paused");
+    res.json({ ok: true, schedule: "paused" });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

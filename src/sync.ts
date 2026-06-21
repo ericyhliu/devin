@@ -1,6 +1,7 @@
 import { config } from "./config.js";
 import { getSession, getLatestDevinMessage } from "./devin.js";
 import { runningTasks, updateSessionSync, markFailed } from "./tasks.js";
+import { runWorkflowSyncTick } from "./workflows.js";
 
 const TERMINAL_FAILURE = new Set(["error", "suspended"]);
 
@@ -14,6 +15,9 @@ const TERMINAL_FAILURE = new Set(["error", "suspended"]);
  * Devin has no outbound webhook for failures or compute usage.
  */
 export async function runSyncTick(): Promise<void> {
+  // Also advance any in-flight discovery workflows.
+  await runWorkflowSyncTick();
+
   const tasks = await runningTasks();
   for (const task of tasks) {
     const sessionId = task.devin_session_id!;
