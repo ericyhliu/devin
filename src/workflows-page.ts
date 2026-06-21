@@ -34,11 +34,7 @@ ${sidebar("workflows")}
           <img src="/devin-logo.svg" class="dv-ico" alt="Devin">
         </a>
         <div class="sched">
-          <span id="sched-text">Auto-run hourly</span>
-          <label class="switch">
-            <input type="checkbox" id="sched-toggle" onchange="toggleSchedule(this.checked)" />
-            <span class="track"></span>
-          </label>
+          <span id="sched-badge" class="badge b-none">Auto-run hourly disabled</span>
         </div>
       </div>
       <div class="panel-kpi" id="wf-summary" style="margin: 14px 0 0"></div>
@@ -70,9 +66,9 @@ function render() {
   // schedule + buttons
   const active = state.schedule === "active";
   const discovering = state.runs.some(r => r.status === "discovering");
-  const toggle = document.getElementById("sched-toggle");
-  if (document.activeElement !== toggle) toggle.checked = active; // don't fight a mid-click
-  document.getElementById("sched-text").textContent = active ? "Auto-run hourly · on" : "Auto-run hourly";
+  const schedBadge = document.getElementById("sched-badge");
+  schedBadge.className = "badge " + (active ? "b-done" : "b-none");
+  schedBadge.textContent = active ? "Auto-run hourly enabled" : "Auto-run hourly disabled";
   const runBtn = document.getElementById("run-btn");
   runBtn.disabled = discovering;
   runBtn.querySelector("svg").nextSibling.textContent = discovering ? " Discovering…" : " Run Code Quality Workflow";
@@ -132,11 +128,6 @@ async function runWorkflow() {
   const btn = document.getElementById("run-btn");
   btn.disabled = true;
   try { await fetch("/api/workflows/run", { method: "POST" }); } catch (e) {}
-  await refresh();
-}
-async function toggleSchedule(on) {
-  const state = on ? "active" : "paused";
-  try { await fetch("/api/workflows/schedule?state=" + state, { method: "POST" }); } catch (e) {}
   await refresh();
 }
 refresh();
