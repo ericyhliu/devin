@@ -44,19 +44,21 @@ app.get("/api/workflows", async (_req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// Run triggers a single discovery now; it does NOT touch the schedule.
 app.post("/api/workflows/run", async (_req, res) => {
   try {
-    await setSchedule("active");
     const result = await triggerWorkflowRun("manual");
     res.json({ ok: true, ...result });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 });
-app.post("/api/workflows/pause", async (_req, res) => {
+// Toggle the hourly auto-schedule independently: ?state=active|paused
+app.post("/api/workflows/schedule", async (req, res) => {
   try {
-    await setSchedule("paused");
-    res.json({ ok: true, schedule: "paused" });
+    const state = req.query.state === "active" ? "active" : "paused";
+    await setSchedule(state);
+    res.json({ ok: true, schedule: state });
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

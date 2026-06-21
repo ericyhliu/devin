@@ -30,14 +30,16 @@ ${sidebar("workflows")}
           <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"/></svg>
           Run Code Quality Workflow
         </button>
-        <button class="btn" id="pause-btn" onclick="pauseWorkflow()">
-          <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
-          Pause
-        </button>
         <a class="icon-btn tip disabled" id="disc-session" target="_blank" data-tip="No discovery session yet">
           <img src="/devin-logo.svg" class="dv-ico" alt="Devin">
         </a>
-        <div class="sched">Schedule: <span id="sched-badge" class="badge b-none">paused</span></div>
+        <div class="sched">
+          <span id="sched-text">Auto-run hourly</span>
+          <label class="switch">
+            <input type="checkbox" id="sched-toggle" onchange="toggleSchedule(this.checked)" />
+            <span class="track"></span>
+          </label>
+        </div>
       </div>
       <div class="panel-kpi" id="wf-summary" style="margin: 14px 0 0"></div>
     </div>
@@ -68,10 +70,9 @@ function render() {
   // schedule + buttons
   const active = state.schedule === "active";
   const discovering = state.runs.some(r => r.status === "discovering");
-  const badge = document.getElementById("sched-badge");
-  badge.className = "badge " + (active ? "b-running pulse" : "b-none");
-  badge.textContent = active ? "Active" : "Paused";
-  document.getElementById("pause-btn").disabled = !active;
+  const toggle = document.getElementById("sched-toggle");
+  if (document.activeElement !== toggle) toggle.checked = active; // don't fight a mid-click
+  document.getElementById("sched-text").textContent = active ? "Auto-run hourly · on" : "Auto-run hourly";
   const runBtn = document.getElementById("run-btn");
   runBtn.disabled = discovering;
   runBtn.querySelector("svg").nextSibling.textContent = discovering ? " Discovering…" : " Run Code Quality Workflow";
@@ -133,8 +134,9 @@ async function runWorkflow() {
   try { await fetch("/api/workflows/run", { method: "POST" }); } catch (e) {}
   await refresh();
 }
-async function pauseWorkflow() {
-  try { await fetch("/api/workflows/pause", { method: "POST" }); } catch (e) {}
+async function toggleSchedule(on) {
+  const state = on ? "active" : "paused";
+  try { await fetch("/api/workflows/schedule?state=" + state, { method: "POST" }); } catch (e) {}
   await refresh();
 }
 refresh();

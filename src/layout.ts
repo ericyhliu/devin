@@ -118,8 +118,15 @@ export function sharedStyles(): string {
   .btn-primary:hover { filter: brightness(1.08); }
   .btn:disabled { opacity: 0.45; cursor: default; filter: none; }
   .wf-control { display: flex; align-items: center; gap: 14px; }
-  .sched { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted); margin-left: auto; }
-  .sched .badge { font-size: 12px; }
+  .sched { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); margin-left: auto; }
+
+  /* toggle switch */
+  .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+  .switch input { display: none; }
+  .switch .track { width: 38px; height: 22px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--border); position: relative; transition: background 0.15s, border-color 0.15s; }
+  .switch .track::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: var(--muted); transition: transform 0.15s, background 0.15s; }
+  .switch input:checked + .track { background: var(--accent); border-color: var(--accent); }
+  .switch input:checked + .track::after { transform: translateX(16px); background: #fff; }
   `;
 }
 
