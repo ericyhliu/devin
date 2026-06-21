@@ -10,6 +10,7 @@ export function renderDashboardPage(): string {
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Devin Orchestrator</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <style>
   :root {
@@ -48,19 +49,19 @@ export function renderDashboardPage(): string {
 
   .panels { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 24px; }
   .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 18px 18px 14px; }
-  .panel-head { margin-bottom: 2px; }
-  .panel-title { font-size: 14px; font-weight: 600; }
-  .panel-kpi { font-size: 12px; color: var(--muted); margin-bottom: 14px; }
+  .panel-head { margin-bottom: 8px; }
+  .panel-title { font-size: 16.5px; font-weight: 650; letter-spacing: -0.01em; }
+  .panel-kpi { font-size: 12px; color: var(--muted); margin-bottom: 18px; }
   .panel-kpi b { color: var(--text); font-weight: 600; }
   .chart-box { position: relative; height: 260px; width: 100%; }
   .chart-box canvas { position: absolute; inset: 0; }
 
   /* throughput panel — vertical stack to match chart height */
   .tp-stack { display: flex; flex-direction: column; gap: 16px; height: 260px; justify-content: space-between; }
-  .tp-block .num { font-size: 30px; font-weight: 680; letter-spacing: -0.02em; margin-top: 2px; }
+  .tp-block .num { font-size: 22px; font-weight: 680; letter-spacing: -0.02em; margin-top: 2px; }
   .box-title { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
   /* horizontal min·avg·max boxplot:  |---<>---|  */
-  .bp { position: relative; height: 44px; margin-top: 12px; }
+  .bp { position: relative; height: 48px; margin-top: 22px; }
   .bp-track { position: absolute; top: 15px; left: 0; right: 0; height: 2px; background: #3a3d48; border-radius: 2px; }
   .bp-cap { position: absolute; top: 8px; width: 2px; height: 16px; background: var(--muted); }
   .bp-cap.min { left: 0; }
@@ -69,7 +70,7 @@ export function renderDashboardPage(): string {
   .bp-lab { position: absolute; font-size: 10px; color: var(--muted); white-space: nowrap; }
   .bp-lab.min { left: 0; top: 25px; }
   .bp-lab.max { right: 0; top: 25px; }
-  .bp-lab.avg { top: -2px; color: var(--text); transform: translateX(-50%); }
+  .bp-lab.avg { top: -14px; color: var(--text); transform: translateX(-50%); }
   @media (max-width: 1000px) { .panels { grid-template-columns: 1fr; } .tp-stack { height: auto; } }
 
   .table-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
@@ -114,7 +115,7 @@ export function renderDashboardPage(): string {
     </div>
     <nav class="nav">
       <a href="/tasks" class="active">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
         Tasks
       </a>
     </nav>
@@ -127,13 +128,13 @@ export function renderDashboardPage(): string {
 
     <div class="panels">
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">Task Status (last 7D)</div></div>
+        <div class="panel-head"><div class="panel-title">Task Status</div></div>
         <div class="panel-kpi" id="kpi-status"></div>
         <div class="chart-box"><canvas id="chartStatus"></canvas></div>
       </div>
 
       <div class="panel">
-        <div class="panel-head"><div class="panel-title">Success / Failure Rate</div></div>
+        <div class="panel-head"><div class="panel-title">Success &amp; Failure Rate</div></div>
         <div class="panel-kpi" id="kpi-rate"></div>
         <div class="chart-box"><canvas id="chartRate"></canvas></div>
       </div>
@@ -233,12 +234,13 @@ function ensureCharts() {
   rateChart = new Chart(document.getElementById("chartRate"), {
     type: "line",
     data: { labels: [], datasets: [
-      { label:"Success %", borderColor:CLR.resolved, backgroundColor:"rgba(52,211,153,0.12)", tension:0.3, fill:true, pointRadius:3, spanGaps:true, data:[] },
-      { label:"Failure %", borderColor:CLR.failed, backgroundColor:"rgba(248,113,113,0.10)", tension:0.3, fill:true, pointRadius:3, spanGaps:true, data:[] },
+      { label:"Success %", borderColor:CLR.resolved, backgroundColor:"rgba(52,211,153,0.12)", tension:0.3, fill:true, pointRadius:3, spanGaps:true, clip:false, data:[] },
+      { label:"Failure %", borderColor:CLR.failed, backgroundColor:"rgba(248,113,113,0.10)", tension:0.3, fill:true, pointRadius:3, spanGaps:true, clip:false, data:[] },
     ]},
     options: { responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:10 } },
       plugins:{ legend:{ position:"bottom", labels:{ boxWidth:10, boxHeight:10, usePointStyle:true } } },
-      scales:{ x:{ grid:{ display:false } }, y:{ beginAtZero:true, max:100, ticks:{ callback:v=>v+"%" } } } }
+      scales:{ x:{ grid:{ display:false } }, y:{ beginAtZero:true, max:100, ticks:{ stepSize:20, callback:v=>v+"%" } } } }
   });
 }
 
