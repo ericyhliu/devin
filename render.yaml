@@ -1,0 +1,22 @@
+# Render Blueprint — defines the deployed service as code.
+# Render auto-detects this file when you create a Blueprint from the repo.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: devin-orchestrator
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: free
+    region: oregon
+    branch: main
+    # Render pings this to know the service is healthy.
+    healthCheckPath: /health
+    envVars:
+      # Render injects PORT automatically; the app reads process.env.PORT.
+      - key: DEVIN_LABEL
+        value: devin
+      # Secret — NOT stored in the repo. Set its value in the Render dashboard
+      # (sync: false tells Render to prompt for it instead of reading it here).
+      - key: GITHUB_WEBHOOK_SECRET
+        sync: false
