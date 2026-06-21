@@ -7,7 +7,12 @@ import { startWorker } from "./worker.js";
 import { startSync } from "./sync.js";
 import { getDashboardData } from "./dashboard.js";
 import { renderDashboardPage } from "./dashboard-page.js";
-import { triggerWorkflowRun, setSchedule, getWorkflowsData } from "./workflows.js";
+import {
+  triggerWorkflowRun,
+  setSchedule,
+  getWorkflowsData,
+  startWorkflowScheduler,
+} from "./workflows.js";
 
 const app = express();
 
@@ -199,6 +204,7 @@ async function main() {
   await initSchema();
   startWorker();
   startSync();
+  startWorkflowScheduler();
   app.listen(config.port, () => {
     console.log(`[server] listening on http://localhost:${config.port}`);
     console.log(`[server] webhook endpoint: POST /api/webhook`);

@@ -182,6 +182,26 @@ export async function runWorkflowSyncTick(): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
+// Periodic scheduler — fires a run every interval IF the schedule is active.
+// The schedule flag is persisted, so "active" survives restarts; the loop is a
+// no-op while paused, so it costs nothing until the operator turns it on.
+// ---------------------------------------------------------------------------
+
+export function startWorkflowScheduler(): void {
+  setInterval(async () => {
+    try {
+      if ((await getSchedule()) !== "active") return;
+      await triggerWorkflowRun("scheduled");
+    } catch (err: any) {
+      console.error("[workflow] scheduler error:", err.message);
+    }
+  }, config.workflowIntervalMs);
+  console.log(
+    `[workflow] scheduler started (interval ${config.workflowIntervalMs}ms, runs only while schedule is active)`,
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Data for the Workflows UI
 // ---------------------------------------------------------------------------
 
