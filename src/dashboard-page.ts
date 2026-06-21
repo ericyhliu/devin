@@ -284,8 +284,8 @@ function updateCharts(c) {
   const hmap = {}; for (const h of c.hourly) hmap[h.hour] = h;
   const hours = last12Hours();
   rateChart.data.labels = hours.map(k => k.slice(11));
-  rateChart.data.datasets[0].data = hours.map(k => { const h=hmap[k]; if(!h) return 100; const t=h.resolved+h.failed; return t? Math.round(h.resolved/t*100):100; });
-  rateChart.data.datasets[1].data = hours.map(k => { const h=hmap[k]; if(!h) return 0;   const t=h.resolved+h.failed; return t? Math.round(h.failed/t*100):0; });
+  rateChart.data.datasets[0].data = hours.map(k => { const h=hmap[k]; if(!h) return 0; const t=h.resolved+h.failed; return t? Math.round(h.resolved/t*100):0; });
+  rateChart.data.datasets[1].data = hours.map(k => { const h=hmap[k]; if(!h) return 0; const t=h.resolved+h.failed; return t? Math.round(h.failed/t*100):0; });
   rateChart.update("none");
 }
 
