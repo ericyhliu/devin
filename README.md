@@ -12,7 +12,7 @@ Devin, writing the fix, opening the PR, tracking it to merge — happens on its 
 > an autonomous agent unlocks. The engineer's job moves up the stack: from writing
 > code → to **designing the workflows and reviewing the PRs.**
 
-Target repo for the demo: a fork of [`apache/superset`](https://github.com/apache/superset).
+Target repo for the demo: [`ericyhliu/superset`](https://github.com/ericyhliu/superset), a fork of [`apache/superset`](https://github.com/apache/superset).
 
 ---
 
