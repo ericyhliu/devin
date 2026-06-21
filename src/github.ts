@@ -28,3 +28,18 @@ export function verifySignature(
   if (a.length !== b.length) return false;
   return crypto.timingSafeEqual(a, b);
 }
+
+/**
+ * Extract the issue number a PR closes, from its body. Matches GitHub's closing
+ * keywords ("Closes #12", "Fixes #12", etc.) and falls back to a bare "#12".
+ * Returns null if no issue reference is found.
+ */
+export function parseClosesIssue(body: string | null | undefined): number | null {
+  if (!body) return null;
+  const keyword = body.match(
+    /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)/i,
+  );
+  if (keyword) return Number(keyword[1]);
+  const bare = body.match(/#(\d+)/);
+  return bare ? Number(bare[1]) : null;
+}

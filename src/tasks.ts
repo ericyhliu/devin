@@ -94,3 +94,26 @@ export async function markFailed(id: number, error: string): Promise<void> {
     [id, error],
   );
 }
+
+/**
+ * Record that a PR has opened for an issue (the completion signal). Matches by
+ * repo + issue number. pr_opened_at is set only once (first PR wins). Returns
+ * true if a matching task was updated.
+ */
+export async function markPrOpen(
+  repo: string,
+  issueNumber: number,
+  prUrl: string,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE tasks
+     SET status = 'pr_open',
+         pr_url = $3,
+         pr_opened_at = COALESCE(pr_opened_at, now()),
+         updated_at = now()
+     WHERE repo = $1 AND issue_number = $2 AND status <> 'pr_open'
+     RETURNING id`,
+    [repo, issueNumber, prUrl],
+  );
+  return (res.rowCount ?? 0) > 0;
+}

@@ -1,8 +1,8 @@
 import express from "express";
 import { config } from "./config.js";
-import { verifySignature } from "./github.js";
+import { verifySignature, parseClosesIssue } from "./github.js";
 import { initSchema } from "./db.js";
-import { recordDelivery, enqueueTask } from "./tasks.js";
+import { recordDelivery, enqueueTask, markPrOpen } from "./tasks.js";
 import { startWorker } from "./worker.js";
 
 const app = express();
@@ -39,6 +39,30 @@ async function handleIssues(payload: any): Promise<void> {
     console.log(`[webhook]   ↳ enqueued task for #${issue.number} (status=queued)`);
   } else {
     console.log(`[webhook]   ↳ #${issue.number} already enqueued — skipping`);
+  }
+}
+
+/** Handle a `pull_request` event: mark the linked task pr_open when Devin's PR opens. */
+async function handlePullRequest(payload: any): Promise<void> {
+  const action = payload.action;
+  if (!["opened", "reopened", "ready_for_review"].includes(action)) return;
+
+  const pr = payload.pull_request;
+  const repo = payload.repository.full_name;
+  const issueNumber = parseClosesIssue(pr?.body);
+  console.log(
+    `[webhook] pull_request.${action} ${repo}#${pr?.number} → closes #${issueNumber ?? "?"}`,
+  );
+  if (!issueNumber) {
+    console.log(`[webhook]   ↳ no linked issue in PR body — ignoring`);
+    return;
+  }
+
+  const matched = await markPrOpen(repo, issueNumber, pr.html_url);
+  if (matched) {
+    console.log(`[webhook]   ↳ task #${issueNumber} → pr_open (${pr.html_url})`);
+  } else {
+    console.log(`[webhook]   ↳ no matching task for #${issueNumber} (already pr_open or untracked)`);
   }
 }
 
@@ -85,6 +109,8 @@ app.post("/api/webhook", express.raw({ type: "*/*" }), async (req, res) => {
       console.log(`[webhook] ✅ ping received (zen: "${payload.zen}") — GitHub is wired up`);
     } else if (event === "issues") {
       await handleIssues(payload);
+    } else if (event === "pull_request") {
+      await handlePullRequest(payload);
     } else {
       console.log(`[webhook] event="${event}" delivery=${delivery} (no handler yet)`);
     }
