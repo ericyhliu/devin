@@ -11,5 +11,5 @@ function required(name: string): string {
 export const config = {
   port: Number(process.env.PORT ?? 3000),
   githubWebhookSecret: required("GITHUB_WEBHOOK_SECRET"),
-  devinLabel: process.env.DEVIN_LABEL ?? "devin-fix",
+  devinLabel: process.env.DEVIN_LABEL ?? "devin",
 };
