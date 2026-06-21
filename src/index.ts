@@ -6,7 +6,7 @@ const app = express();
 
 // Simple health check so we can confirm the service is up (and for Render).
 app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "devin-remediation", ts: new Date().toISOString() });
+  res.json({ ok: true, service: "devin-orchestrator", ts: new Date().toISOString() });
 });
 
 /**
