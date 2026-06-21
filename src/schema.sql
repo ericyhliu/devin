@@ -12,6 +12,8 @@ CREATE TABLE IF NOT EXISTS tasks (
   devin_session_id TEXT,                           -- null until a session is created
   status           TEXT        NOT NULL DEFAULT 'queued',
   status_detail    TEXT,                           -- raw status string from Devin
+  acus_consumed    NUMERIC     NOT NULL DEFAULT 0, -- Devin compute units used (1 ACU ~= 15 min)
+  last_message     TEXT,                           -- latest activity line from the session
   pr_url           TEXT,                           -- null until the PR opens
   error            TEXT,                           -- failure reason, if any
 
@@ -24,6 +26,10 @@ CREATE TABLE IF NOT EXISTS tasks (
   -- relies on this for idempotency via INSERT ... ON CONFLICT DO NOTHING.
   UNIQUE (repo, issue_number)
 );
+
+-- Migrate existing tables (CREATE above only applies to a fresh DB).
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS acus_consumed NUMERIC NOT NULL DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN IF NOT EXISTS last_message  TEXT;
 
 -- Dumb idempotency log: dedupes redelivered GitHub webhooks across all event
 -- types. The handler inserts the X-GitHub-Delivery id first; a conflict means

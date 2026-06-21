@@ -9,6 +9,8 @@ export interface Task {
   devin_session_id: string | null;
   status: string;
   status_detail: string | null;
+  acus_consumed: string; // NUMERIC comes back as string from pg
+  last_message: string | null;
   pr_url: string | null;
   error: string | null;
   created_at: string;
@@ -93,6 +95,51 @@ export async function markFailed(id: number, error: string): Promise<void> {
     `UPDATE tasks SET status = 'failed', error = $2, updated_at = now() WHERE id = $1`,
     [id, error],
   );
+}
+
+/** Tasks currently dispatched to Devin — the sync loop polls these. */
+export async function runningTasks(): Promise<Task[]> {
+  const res = await query<Task>(
+    `SELECT * FROM tasks WHERE status = 'running' AND devin_session_id IS NOT NULL`,
+  );
+  return res.rows;
+}
+
+/** Update live progress fields captured from a Devin session. */
+export async function updateSessionSync(
+  id: number,
+  fields: { statusDetail?: string | null; acusConsumed?: number; lastMessage?: string | null },
+): Promise<void> {
+  await query(
+    `UPDATE tasks
+     SET status_detail = COALESCE($2, status_detail),
+         acus_consumed = COALESCE($3, acus_consumed),
+         last_message  = COALESCE($4, last_message),
+         updated_at = now()
+     WHERE id = $1`,
+    [id, fields.statusDetail ?? null, fields.acusConsumed ?? null, fields.lastMessage ?? null],
+  );
+}
+
+/**
+ * Record that the PR was closed WITHOUT merging — a de-facto rejection.
+ * pr_open -> rejected. Returns true if a matching task was updated.
+ */
+export async function markRejected(
+  repo: string,
+  issueNumber: number,
+  prUrl: string,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE tasks
+     SET status = 'rejected',
+         pr_url = COALESCE(pr_url, $3),
+         updated_at = now()
+     WHERE repo = $1 AND issue_number = $2 AND status NOT IN ('rejected', 'done')
+     RETURNING id`,
+    [repo, issueNumber, prUrl],
+  );
+  return (res.rowCount ?? 0) > 0;
 }
 
 /**

@@ -50,7 +50,7 @@ export async function createSession(input: CreateSessionInput): Promise<DevinSes
   return (await res.json()) as DevinSession;
 }
 
-/** Fetch the current state of a session (used by the reconciler, not the happy path). */
+/** Fetch the current state of a session (used by the sync loop, not the happy path). */
 export async function getSession(sessionId: string): Promise<DevinSession> {
   const res = await fetch(`${ORG_BASE}/sessions/${sessionId}`, {
     headers: authHeaders(),
@@ -60,4 +60,27 @@ export async function getSession(sessionId: string): Promise<DevinSession> {
     throw new Error(`Devin getSession ${res.status}: ${text.slice(0, 300)}`);
   }
   return (await res.json()) as DevinSession;
+}
+
+export interface DevinMessage {
+  event_id: string;
+  source: string; // "user" | "devin" | ...
+  message: string;
+}
+
+/**
+ * Fetch the latest message Devin emitted in a session (for live progress text).
+ * Returns the most recent non-user message, or null if none yet.
+ */
+export async function getLatestDevinMessage(sessionId: string): Promise<string | null> {
+  const res = await fetch(`${ORG_BASE}/sessions/${sessionId}/messages`, {
+    headers: authHeaders(),
+  });
+  if (!res.ok) return null; // progress text is best-effort; never block on it
+  const data = (await res.json()) as { items?: DevinMessage[] };
+  const items = data.items ?? [];
+  for (let i = items.length - 1; i >= 0; i--) {
+    if (items[i].source !== "user") return items[i].message;
+  }
+  return null;
 }

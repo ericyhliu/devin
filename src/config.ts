@@ -22,4 +22,7 @@ export const config = {
   // Worker
   workerIntervalMs: Number(process.env.WORKER_INTERVAL_MS ?? 15000),
   maxConcurrentSessions: Number(process.env.MAX_CONCURRENT_SESSIONS ?? 3),
+
+  // Sync loop (live progress + ACU capture + failure safety-net)
+  syncIntervalMs: Number(process.env.SYNC_INTERVAL_MS ?? 20000),
 };

@@ -2,14 +2,28 @@ import express from "express";
 import { config } from "./config.js";
 import { verifySignature, parseClosesIssue } from "./github.js";
 import { initSchema } from "./db.js";
-import { recordDelivery, enqueueTask, markPrOpen, markDone } from "./tasks.js";
+import { recordDelivery, enqueueTask, markPrOpen, markDone, markRejected } from "./tasks.js";
 import { startWorker } from "./worker.js";
+import { startSync } from "./sync.js";
+import { getDashboardData } from "./dashboard.js";
+import { renderDashboardPage } from "./dashboard-page.js";
 
 const app = express();
 
 // Simple health check so we can confirm the service is up (and for Render).
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "devin-orchestrator", ts: new Date().toISOString() });
+});
+
+// Dashboard: HTML shell + JSON data endpoint it polls.
+app.get("/", (_req, res) => res.redirect("/tasks"));
+app.get("/tasks", (_req, res) => res.type("html").send(renderDashboardPage()));
+app.get("/api/tasks", async (_req, res) => {
+  try {
+    res.json(await getDashboardData());
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /** Handle an `issues` event: enqueue a task if the issue carries the devin label. */
@@ -64,16 +78,20 @@ async function handlePullRequest(payload: any): Promise<void> {
       ` ${repo}#${pr?.number} → closes #${issueNumber ?? "?"}`,
   );
 
-  if (action === "closed" && !pr?.merged) {
-    console.log(`[webhook]   ↳ PR closed without merging — leaving task as-is`);
-    return;
-  }
   if (!issueNumber) {
     console.log(`[webhook]   ↳ no linked issue in PR body — ignoring`);
     return;
   }
 
-  if (action === "closed") {
+  if (action === "closed" && !pr?.merged) {
+    // PR closed without merging = de-facto rejection.
+    const matched = await markRejected(repo, issueNumber, pr.html_url);
+    console.log(
+      matched
+        ? `[webhook]   ↳ task #${issueNumber} → rejected (PR closed unmerged)`
+        : `[webhook]   ↳ no matching task for #${issueNumber} (already terminal or untracked)`,
+    );
+  } else if (action === "closed") {
     const matched = await markDone(repo, issueNumber, pr.html_url);
     console.log(
       matched
@@ -151,6 +169,7 @@ app.post("/api/webhook", express.raw({ type: "*/*" }), async (req, res) => {
 async function main() {
   await initSchema();
   startWorker();
+  startSync();
   app.listen(config.port, () => {
     console.log(`[server] listening on http://localhost:${config.port}`);
     console.log(`[server] webhook endpoint: POST /api/webhook`);
