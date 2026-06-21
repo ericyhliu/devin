@@ -34,6 +34,9 @@ ${sidebar("workflows")}
           <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
           Pause
         </button>
+        <a class="icon-btn tip disabled" id="disc-session" target="_blank" data-tip="No discovery session yet">
+          <img src="/devin-logo.svg" class="dv-ico" alt="Devin">
+        </a>
         <div class="sched">Schedule: <span id="sched-badge" class="badge b-none">paused</span></div>
       </div>
       <div class="panel-kpi" id="wf-summary" style="margin: 14px 0 0"></div>
@@ -72,6 +75,20 @@ function render() {
   const runBtn = document.getElementById("run-btn");
   runBtn.disabled = discovering;
   runBtn.querySelector("svg").nextSibling.textContent = discovering ? " Discovering…" : " Run Code Quality Workflow";
+
+  // Devin button → peek into the active (or most recent) discovery session
+  const discRun = state.runs.find(r => r.status === "discovering") || state.runs[0];
+  const discSession = discRun && discRun.discovery_session_id;
+  const discBtn = document.getElementById("disc-session");
+  if (discSession) {
+    discBtn.classList.remove("disabled");
+    discBtn.href = DEVIN_SESSION_BASE + discSession;
+    discBtn.setAttribute("data-tip", discRun.status === "discovering" ? "View active discovery session" : "View last discovery session");
+  } else {
+    discBtn.classList.add("disabled");
+    discBtn.removeAttribute("href");
+    discBtn.setAttribute("data-tip", "No discovery session yet");
+  }
 
   const totalIssues = state.issues.length;
   document.getElementById("wf-summary").innerHTML =
