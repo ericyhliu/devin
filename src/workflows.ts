@@ -10,22 +10,22 @@ function discoveryPrompt(): string {
   return [
     `You are performing automated code-quality triage on the GitHub repository ${config.targetRepo}.`,
     ``,
-    `Find exactly 3 SMALL, SAFE, single-file code-quality issues and FILE them as GitHub issues. Do NOT fix them.`,
+    `Find exactly 1 SMALL, SAFE, single-file code-quality issue and FILE it as a GitHub issue. Do NOT fix it.`,
     ``,
-    `Each issue MUST be:`,
+    `The issue MUST be:`,
     `- scoped to a single file`,
     `- an unambiguous, low-risk fix — e.g. a Python 3.12 deprecation (datetime.utcnow(), datetime.utcfromtimestamp()), an unnecessary f-string prefix (flake8 F541), or old-style %-formatting that should be an f-string`,
     `- NOT a refactor, NOT a behavior change, NOT dependent on broad context`,
     ``,
     `Steps:`,
-    `1. First check the repository's existing OPEN issues and avoid creating duplicates.`,
-    `2. For each of the 3 issues, create a GitHub issue in ${config.targetRepo} with:`,
+    `1. First check the repository's existing OPEN issues and avoid creating a duplicate.`,
+    `2. Create one GitHub issue in ${config.targetRepo} with:`,
     `   - a clear, specific title that names the file`,
     `   - a body describing the exact change to make and why`,
     `   - the label "${config.devinLabel}"`,
-    `3. Do NOT implement the fixes — only create the issues.`,
+    `3. Do NOT implement the fix — only create the issue.`,
     ``,
-    `When done, return structured output listing the issues you created.`,
+    `When done, return structured output listing the issue you created.`,
   ].join("\n");
 }
 
