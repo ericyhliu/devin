@@ -111,7 +111,28 @@ export async function markPrOpen(
          pr_url = $3,
          pr_opened_at = COALESCE(pr_opened_at, now()),
          updated_at = now()
-     WHERE repo = $1 AND issue_number = $2 AND status <> 'pr_open'
+     WHERE repo = $1 AND issue_number = $2 AND status NOT IN ('pr_open', 'done')
+     RETURNING id`,
+    [repo, issueNumber, prUrl],
+  );
+  return (res.rowCount ?? 0) > 0;
+}
+
+/**
+ * Record that the PR was merged (the terminal success signal): pr_open -> done.
+ * Returns true if a matching task was updated.
+ */
+export async function markDone(
+  repo: string,
+  issueNumber: number,
+  prUrl: string,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE tasks
+     SET status = 'done',
+         pr_url = COALESCE(pr_url, $3),
+         updated_at = now()
+     WHERE repo = $1 AND issue_number = $2 AND status <> 'done'
      RETURNING id`,
     [repo, issueNumber, prUrl],
   );

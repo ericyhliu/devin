@@ -2,7 +2,7 @@ import express from "express";
 import { config } from "./config.js";
 import { verifySignature, parseClosesIssue } from "./github.js";
 import { initSchema } from "./db.js";
-import { recordDelivery, enqueueTask, markPrOpen } from "./tasks.js";
+import { recordDelivery, enqueueTask, markPrOpen, markDone } from "./tasks.js";
 import { startWorker } from "./worker.js";
 
 const app = express();
@@ -42,27 +42,51 @@ async function handleIssues(payload: any): Promise<void> {
   }
 }
 
-/** Handle a `pull_request` event: mark the linked task pr_open when Devin's PR opens. */
+/**
+ * Handle a `pull_request` event. Two transitions:
+ *  - opened/reopened/ready_for_review → task goes pr_open
+ *  - closed with merged=true          → task goes done (terminal success)
+ * A close without a merge is ignored (the PR may be reworked/reopened).
+ */
 async function handlePullRequest(payload: any): Promise<void> {
   const action = payload.action;
-  if (!["opened", "reopened", "ready_for_review"].includes(action)) return;
-
   const pr = payload.pull_request;
   const repo = payload.repository.full_name;
   const issueNumber = parseClosesIssue(pr?.body);
+
+  const relevant =
+    ["opened", "reopened", "ready_for_review"].includes(action) ||
+    action === "closed";
+  if (!relevant) return;
+
   console.log(
-    `[webhook] pull_request.${action} ${repo}#${pr?.number} → closes #${issueNumber ?? "?"}`,
+    `[webhook] pull_request.${action}${action === "closed" ? ` merged=${!!pr?.merged}` : ""}` +
+      ` ${repo}#${pr?.number} → closes #${issueNumber ?? "?"}`,
   );
+
+  if (action === "closed" && !pr?.merged) {
+    console.log(`[webhook]   ↳ PR closed without merging — leaving task as-is`);
+    return;
+  }
   if (!issueNumber) {
     console.log(`[webhook]   ↳ no linked issue in PR body — ignoring`);
     return;
   }
 
-  const matched = await markPrOpen(repo, issueNumber, pr.html_url);
-  if (matched) {
-    console.log(`[webhook]   ↳ task #${issueNumber} → pr_open (${pr.html_url})`);
+  if (action === "closed") {
+    const matched = await markDone(repo, issueNumber, pr.html_url);
+    console.log(
+      matched
+        ? `[webhook]   ↳ task #${issueNumber} → done (PR merged)`
+        : `[webhook]   ↳ no matching task for #${issueNumber} (already done or untracked)`,
+    );
   } else {
-    console.log(`[webhook]   ↳ no matching task for #${issueNumber} (already pr_open or untracked)`);
+    const matched = await markPrOpen(repo, issueNumber, pr.html_url);
+    console.log(
+      matched
+        ? `[webhook]   ↳ task #${issueNumber} → pr_open (${pr.html_url})`
+        : `[webhook]   ↳ no matching task for #${issueNumber} (already pr_open/done or untracked)`,
+    );
   }
 }
 
