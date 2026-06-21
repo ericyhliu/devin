@@ -18,9 +18,8 @@ app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "devin-orchestrator", ts: new Date().toISOString() });
 });
 
-// Dashboard: HTML shell + JSON data endpoint it polls.
-app.get("/", (_req, res) => res.redirect("/tasks"));
-app.get("/tasks", (_req, res) => res.type("html").send(renderDashboardPage()));
+// Dashboard: HTML shell at / + JSON data endpoint it polls.
+app.get("/", (_req, res) => res.type("html").send(renderDashboardPage()));
 app.get("/api/tasks", async (_req, res) => {
   try {
     res.json(await getDashboardData());

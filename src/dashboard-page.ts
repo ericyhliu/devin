@@ -73,7 +73,20 @@ export function renderDashboardPage(): string {
   .bp-lab.avg { top: -14px; color: var(--text); transform: translateX(-50%); }
   @media (max-width: 1000px) { .panels { grid-template-columns: 1fr; } .tp-stack { height: auto; } }
 
-  .table-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .table-wrap { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; }
+  /* custom tooltip — instant, high-contrast, positioned above the trigger */
+  .tip { position: relative; }
+  .tip::after {
+    content: attr(data-tip); position: absolute; bottom: calc(100% + 9px); left: 50%; transform: translateX(-50%);
+    background: #1c1e26; color: var(--text); border: 1px solid var(--border); padding: 6px 10px; border-radius: 7px;
+    font-size: 11px; font-weight: 600; white-space: nowrap; opacity: 0; pointer-events: none; z-index: 100;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+  }
+  .tip::before {
+    content: ""; position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+    border: 6px solid transparent; border-top-color: var(--border); opacity: 0; pointer-events: none; z-index: 100;
+  }
+  .tip:hover::after, .tip:hover::before { opacity: 1; }
   table { width: 100%; border-collapse: collapse; }
   thead th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; padding: 12px 16px; border-bottom: 1px solid var(--border); }
   tbody td { padding: 14px 16px; border-bottom: 1px solid var(--border); vertical-align: middle; }
@@ -95,16 +108,20 @@ export function renderDashboardPage(): string {
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.25; } }
 
   /* icon action buttons in the table */
-  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--panel-2); }
+  .icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid var(--border); border-radius: 8px; color: var(--text); background: var(--panel-2); cursor: pointer; font: inherit; }
   .icon-btn + .icon-btn { margin-left: 6px; }
   .icon-btn:hover { border-color: var(--accent); color: #fff; }
-  .icon-btn.disabled { opacity: 0.32; pointer-events: none; }
+  .icon-btn.disabled { opacity: 0.32; cursor: default; }
   .icon-btn svg { width: 15px; height: 15px; }
   .icon-btn .dv-ico { width: 15px; height: 15px; filter: brightness(0) invert(1); }
   .empty { padding: 40px; text-align: center; color: var(--muted); }
-  .detail { color: var(--muted); font-size: 12px; }
-  .detail-cell { max-width: 360px; }
-  .detail-cell .detail { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* accordion detail row */
+  .detail-row td { padding: 0; background: var(--panel-2); }
+  .detail-panel { padding: 14px 18px 16px; }
+  .detail-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin-bottom: 6px; }
+  .detail-msg { font-size: 13px; color: var(--text); line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+  .icon-btn.chev svg { transition: transform 0.15s ease; }
+  .icon-btn.chev.open svg { transform: rotate(180deg); }
 </style>
 </head>
 <body>
@@ -114,7 +131,7 @@ export function renderDashboardPage(): string {
       <span class="brand-name">Devin Orchestrator</span>
     </div>
     <nav class="nav">
-      <a href="/tasks" class="active">
+      <a href="/" class="active">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
         Tasks
       </a>
@@ -162,9 +179,9 @@ export function renderDashboardPage(): string {
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>Issue</th><th>Status</th><th>Processing</th><th>Elapsed</th><th>ACUs</th><th></th></tr>
+          <tr><th>Issue</th><th>Status</th><th>Elapsed</th><th>ACUs</th><th></th></tr>
         </thead>
-        <tbody id="rows"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+        <tbody id="rows"><tr><td colspan="5" class="empty">Loading…</td></tr></tbody>
       </table>
     </div>
   </main>
@@ -173,6 +190,12 @@ export function renderDashboardPage(): string {
 const DEVIN_SESSION_BASE = "https://app.devin.ai/sessions/";
 const GH_ICON = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>';
 const DV_ICON = '<img src="/devin-logo.svg" class="dv-ico" alt="Devin">';
+const CHEVRON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+const expanded = new Set();
+function toggleRow(id) {
+  if (expanded.has(id)) expanded.delete(id); else expanded.add(id);
+  renderRows(state.tasks);
+}
 let state = { metrics: null, tasks: [], charts: null };
 let statusChart, rateChart;
 
@@ -193,7 +216,8 @@ function elapsedFor(t) {
   const end = t.pr_opened_at || t.updated_at;
   return (new Date(end) - new Date(t.created_at)) / 1000;
 }
-function statusLabel(s) { return s.replace("_"," "); }
+const STATUS_LABELS = { queued:"Queued", running:"Running", pr_open:"PR Open", done:"Done", failed:"Failed", rejected:"Rejected" };
+function statusLabel(s) { return STATUS_LABELS[s] || s.replace("_"," "); }
 function escapeHtml(s){return (s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function mmdd(d){ return d.slice(5); }
 function pad2(n){ return String(n).padStart(2,"0"); }
@@ -302,26 +326,33 @@ function renderRows(tasks) {
   tbody.innerHTML = tasks.map(t => {
     const running = t.status === "running";
     const badge = '<span class="badge b-'+t.status+(running?' pulse':'')+'">'+statusLabel(t.status)+'</span>';
-    let detailText = "—";
-    if (running) detailText = t.last_message || t.status_detail || "working";
-    else if (t.status === "queued") detailText = "waiting for worker";
-    const detail = '<span class="detail" title="'+escapeHtml(detailText)+'">'+escapeHtml(detailText)+'</span>';
     const acus = Number(t.acus_consumed || 0).toFixed(2);
+    const isOpen = expanded.has(t.id);
     const prBtn = t.pr_url
-      ? '<a class="icon-btn" href="'+t.pr_url+'" target="_blank" title="View GitHub PR">'+GH_ICON+'</a>'
-      : '<span class="icon-btn disabled" title="No PR yet">'+GH_ICON+'</span>';
+      ? '<a class="icon-btn tip" data-tip="View GitHub PR" href="'+t.pr_url+'" target="_blank">'+GH_ICON+'</a>'
+      : '<span class="icon-btn tip disabled" data-tip="No PR yet">'+GH_ICON+'</span>';
     const sessionBtn = t.devin_session_id
-      ? '<a class="icon-btn" href="'+DEVIN_SESSION_BASE+t.devin_session_id+'" target="_blank" title="View Devin session">'+DV_ICON+'</a>'
-      : '<span class="icon-btn disabled" title="No session yet">'+DV_ICON+'</span>';
+      ? '<a class="icon-btn tip" data-tip="View Devin session" href="'+DEVIN_SESSION_BASE+t.devin_session_id+'" target="_blank">'+DV_ICON+'</a>'
+      : '<span class="icon-btn tip disabled" data-tip="No session yet">'+DV_ICON+'</span>';
+    const chevBtn = '<button type="button" class="icon-btn tip chev'+(isOpen?' open':'')+'" data-tip="Latest message" onclick="toggleRow('+t.id+')">'+CHEVRON+'</button>';
+
+    const msg = t.last_message || t.status_detail || (t.status === "queued" ? "Waiting for worker to dispatch." : "No messages yet.");
+    const detailRow =
+      '<tr class="detail-row" style="'+(isOpen?'':'display:none')+'">'
+      + '<td colspan="5"><div class="detail-panel">'
+      +   '<div class="detail-label">Latest message</div>'
+      +   '<div class="detail-msg">'+escapeHtml(msg)+'</div>'
+      + '</div></td></tr>';
+
     return '<tr>'
       + '<td><div class="issue-title"><a href="'+t.issue_url+'" target="_blank">'+escapeHtml(t.issue_title)+'</a></div>'
       +   '<div class="issue-meta">'+t.repo+' #'+t.issue_number+'</div></td>'
       + '<td>'+badge+'</td>'
-      + '<td class="detail-cell">'+detail+'</td>'
       + '<td class="mono" data-elapsed="'+t.id+'">'+fmtDuration(elapsedFor(t))+'</td>'
       + '<td class="mono">'+acus+'</td>'
-      + '<td style="text-align:right;white-space:nowrap">'+prBtn+sessionBtn+'</td>'
-      + '</tr>';
+      + '<td style="text-align:right;white-space:nowrap">'+prBtn+sessionBtn+chevBtn+'</td>'
+      + '</tr>'
+      + detailRow;
   }).join("");
 }
 
