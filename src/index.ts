@@ -3,6 +3,7 @@ import { config } from "./config.js";
 import { verifySignature } from "./github.js";
 import { initSchema } from "./db.js";
 import { recordDelivery, enqueueTask } from "./tasks.js";
+import { startWorker } from "./worker.js";
 
 const app = express();
 
@@ -99,6 +100,7 @@ app.post("/api/webhook", express.raw({ type: "*/*" }), async (req, res) => {
 
 async function main() {
   await initSchema();
+  startWorker();
   app.listen(config.port, () => {
     console.log(`[server] listening on http://localhost:${config.port}`);
     console.log(`[server] webhook endpoint: POST /api/webhook`);

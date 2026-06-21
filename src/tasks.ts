@@ -1,5 +1,22 @@
 import { query } from "./db.js";
 
+export interface Task {
+  id: number;
+  repo: string;
+  issue_number: number;
+  issue_title: string;
+  issue_url: string;
+  devin_session_id: string | null;
+  status: string;
+  status_detail: string | null;
+  pr_url: string | null;
+  error: string | null;
+  created_at: string;
+  dispatched_at: string | null;
+  pr_opened_at: string | null;
+  updated_at: string;
+}
+
 /**
  * Record a webhook delivery for idempotency. Returns true if this is the FIRST
  * time we've seen this delivery id, false if it's a redelivery (already seen).
@@ -41,4 +58,39 @@ export async function enqueueTask(input: EnqueueInput): Promise<boolean> {
     [input.repo, input.issueNumber, input.issueTitle, input.issueUrl],
   );
   return (res.rowCount ?? 0) > 0;
+}
+
+/** How many sessions are currently in flight (for concurrency control). */
+export async function countRunning(): Promise<number> {
+  const res = await query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM tasks WHERE status = 'running'`,
+  );
+  return res.rows[0].n;
+}
+
+/** Oldest queued tasks, up to `limit`, for the worker to dispatch. */
+export async function nextQueued(limit: number): Promise<Task[]> {
+  const res = await query<Task>(
+    `SELECT * FROM tasks WHERE status = 'queued' ORDER BY created_at ASC LIMIT $1`,
+    [limit],
+  );
+  return res.rows;
+}
+
+/** Mark a task as dispatched to Devin. */
+export async function markRunning(id: number, sessionId: string): Promise<void> {
+  await query(
+    `UPDATE tasks
+     SET status = 'running', devin_session_id = $2, dispatched_at = now(), updated_at = now()
+     WHERE id = $1`,
+    [id, sessionId],
+  );
+}
+
+/** Mark a task as failed (e.g. the Devin create call errored). */
+export async function markFailed(id: number, error: string): Promise<void> {
+  await query(
+    `UPDATE tasks SET status = 'failed', error = $2, updated_at = now() WHERE id = $1`,
+    [id, error],
+  );
 }

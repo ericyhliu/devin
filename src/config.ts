@@ -13,4 +13,13 @@ export const config = {
   githubWebhookSecret: required("GITHUB_WEBHOOK_SECRET"),
   devinLabel: process.env.DEVIN_LABEL ?? "devin",
   databaseUrl: required("DATABASE_URL"),
+
+  // Devin v3 API
+  devinApiKey: required("DEVIN_API_KEY"),
+  devinOrgId: required("DEVIN_ORG_ID"),
+  devinApiBaseUrl: process.env.DEVIN_API_BASE_URL ?? "https://api.devin.ai",
+
+  // Worker
+  workerIntervalMs: Number(process.env.WORKER_INTERVAL_MS ?? 15000),
+  maxConcurrentSessions: Number(process.env.MAX_CONCURRENT_SESSIONS ?? 3),
 };
