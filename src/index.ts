@@ -10,6 +10,9 @@ import { renderDashboardPage } from "./dashboard-page.js";
 
 const app = express();
 
+// Static assets (e.g. the Devin logo) served from /public.
+app.use(express.static("public"));
+
 // Simple health check so we can confirm the service is up (and for Render).
 app.get("/health", (_req, res) => {
   res.json({ ok: true, service: "devin-orchestrator", ts: new Date().toISOString() });
